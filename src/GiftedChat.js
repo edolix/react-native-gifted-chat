@@ -65,6 +65,7 @@ class GiftedChat extends React.Component {
     this.getLocale = this.getLocale.bind(this);
     this.onInputSizeChanged = this.onInputSizeChanged.bind(this);
     this.onInputTextChanged = this.onInputTextChanged.bind(this);
+    this.onInputNumberChanged = this.onInputNumberChanged.bind(this);
     this.onMainViewLayout = this.onMainViewLayout.bind(this);
     this.onInitialLayoutViewLayout = this.onInitialLayoutViewLayout.bind(this);
 
@@ -241,6 +242,9 @@ class GiftedChat extends React.Component {
     if (this.props.isAnimated === true) {
       return new Animated.Value(value);
     }
+    if (this.props.isNewMessage) {
+      value -= this.getMinInputToolbarHeight()
+    }
     return value;
   }
 
@@ -248,7 +252,7 @@ class GiftedChat extends React.Component {
     this.setIsTypingDisabled(true);
     this.setKeyboardHeight(e.endCoordinates ? e.endCoordinates.height : e.end.height);
     this.setBottomOffset(this.props.bottomOffset);
-    const newMessagesContainerHeight = this.getMessagesContainerHeightWithKeyboard();
+    const newMessagesContainerHeight = this.prepareMessagesContainerHeight( this.getMessagesContainerHeightWithKeyboard() );
     if (this.props.isAnimated === true) {
       Animated.timing(this.state.messagesContainerHeight, {
         toValue: newMessagesContainerHeight,
@@ -265,7 +269,7 @@ class GiftedChat extends React.Component {
     this.setIsTypingDisabled(true);
     this.setKeyboardHeight(0);
     this.setBottomOffset(0);
-    const newMessagesContainerHeight = this.getBasicMessagesContainerHeight();
+    const newMessagesContainerHeight = this.prepareMessagesContainerHeight( this.getBasicMessagesContainerHeight() );
     if (this.props.isAnimated === true) {
       Animated.timing(this.state.messagesContainerHeight, {
         toValue: newMessagesContainerHeight,
@@ -339,7 +343,7 @@ class GiftedChat extends React.Component {
       this.resetInputToolbar();
     }
 
-    this.props.onSend(messages);
+    this.props.onSend(messages, this.state.number);
     this.scrollToBottom();
 
     if (shouldResetInputToolbar === true) {
@@ -354,6 +358,9 @@ class GiftedChat extends React.Component {
   resetInputToolbar() {
     if (this.textInput) {
       this.textInput.clear();
+    }
+    if (this.numberInput) {
+      this.numberInput.clear();
     }
     this.notifyInputTextReset();
     const newComposerHeight = MIN_COMPOSER_HEIGHT;
@@ -384,6 +391,20 @@ class GiftedChat extends React.Component {
     // Only set state if it's not being overridden by a prop.
     if (this.props.text === undefined) {
       this.setState({ text });
+    }
+  }
+
+  onInputNumberChanged(number) {
+    if (this.getIsTypingDisabled()) {
+      return;
+    }
+    number = Number(number)
+    if (this.props.onInputNumberChanged) {
+      this.props.onInputNumberChanged(number);
+    }
+    // Only set state if it's not being overridden by a prop.
+    if (this.props.number === undefined) {
+      this.setState({ number });
     }
   }
 
@@ -451,6 +472,37 @@ class GiftedChat extends React.Component {
     );
   }
 
+  renderNumberToolbar() {
+    if (!this.props.isNewMessage) {
+      return null
+    }
+    const numberToolbarProps = {
+      ...this.props,
+      // text: '',
+      number: this.state.number,
+      composerHeight: MIN_COMPOSER_HEIGHT,
+      onSend: this.onSend,
+      onInputSizeChanged: this.onInputSizeChanged,
+      onTextChanged: this.onInputNumberChanged,
+      textInputProps: {
+        ...this.props.textInputProps,
+        ref: numberInput => this.numberInput = numberInput,
+        placeholder: 'Type mobile number..',
+        keyboardType: 'numeric',
+        autoCorrect: false,
+        autoFocus: true,
+        numberOfLines: 1,
+        value: this.props.number,
+      },
+      options: false,
+    }
+    return (
+      <InputToolbar
+        {...numberToolbarProps}
+      />
+    )
+  }
+
   renderChatFooter() {
     if (this.props.renderChatFooter) {
       const footerProps = {
@@ -473,6 +525,7 @@ class GiftedChat extends React.Component {
       return (
         <ActionSheet ref={component => this._actionSheetRef = component}>
           <View style={styles.container} onLayout={this.onMainViewLayout}>
+            {this.renderNumberToolbar()}
             {this.renderMessages()}
             {this.renderInputToolbar()}
           </View>
@@ -501,6 +554,7 @@ GiftedChat.childContextTypes = {
 GiftedChat.defaultProps = {
   messages: [],
   text: undefined,
+  number: undefined,
   placeholder: 'Type a message...',
   messageIdGenerator: () => uuid.v4(),
   user: {},
@@ -534,6 +588,7 @@ GiftedChat.defaultProps = {
   renderFooter: null,
   renderChatFooter: null,
   renderInputToolbar: null,
+  renderNumberToolbar: null,
   renderComposer: null,
   renderActions: null,
   renderSend: null,
@@ -547,12 +602,14 @@ GiftedChat.defaultProps = {
     android: 'always',
   }),
   onInputTextChanged: null,
+  onInputNumberChanged: null,
   maxInputLength: null,
 };
 
 GiftedChat.propTypes = {
   messages: PropTypes.array,
   text: PropTypes.string,
+  number: PropTypes.number,
   placeholder: PropTypes.string,
   messageIdGenerator: PropTypes.func,
   user: PropTypes.object,
@@ -593,6 +650,7 @@ GiftedChat.propTypes = {
   listViewProps: PropTypes.object,
   keyboardShouldPersistTaps: PropTypes.oneOf(['always', 'never', 'handled']),
   onInputTextChanged: PropTypes.func,
+  onInputNumberChanged: PropTypes.func,
   maxInputLength: PropTypes.number,
 };
 
