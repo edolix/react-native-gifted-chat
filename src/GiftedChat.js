@@ -239,11 +239,11 @@ class GiftedChat extends React.Component {
   }
 
   prepareMessagesContainerHeight(value) {
-    if (this.props.isAnimated === true) {
-      return new Animated.Value(value);
-    }
     if (this.props.isNewMessage) {
       value -= this.getMinInputToolbarHeight()
+    }
+    if (this.props.isAnimated === true) {
+      return new Animated.Value(value);
     }
     return value;
   }
@@ -255,7 +255,7 @@ class GiftedChat extends React.Component {
     const newMessagesContainerHeight = this.prepareMessagesContainerHeight( this.getMessagesContainerHeightWithKeyboard() );
     if (this.props.isAnimated === true) {
       Animated.timing(this.state.messagesContainerHeight, {
-        toValue: newMessagesContainerHeight,
+        toValue: newMessagesContainerHeight._value,
         duration: 210,
       }).start();
     } else {
@@ -272,7 +272,7 @@ class GiftedChat extends React.Component {
     const newMessagesContainerHeight = this.prepareMessagesContainerHeight( this.getBasicMessagesContainerHeight() );
     if (this.props.isAnimated === true) {
       Animated.timing(this.state.messagesContainerHeight, {
-        toValue: newMessagesContainerHeight,
+        toValue: newMessagesContainerHeight._value,
         duration: 210,
       }).start();
     } else {
