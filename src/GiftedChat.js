@@ -5,8 +5,12 @@ import {
   Platform,
   StyleSheet,
   View,
+  TouchableOpacity,
+  Text,
 } from 'react-native';
 
+import Autocomplete from 'react-native-autocomplete-input';
+import Icon from 'react-native-vector-icons/FontAwesome'
 import ActionSheet from '@expo/react-native-action-sheet';
 import moment from 'moment/min/moment-with-locales.min';
 import uuid from 'uuid';
@@ -49,6 +53,7 @@ class GiftedChat extends React.Component {
     this._isFirstLayout = true;
     this._locale = 'en';
     this._messages = [];
+    this._recipients = [];
 
     this.state = {
       isInitialized: false, // initialization will calculate maxHeight before rendering the chat
@@ -65,10 +70,11 @@ class GiftedChat extends React.Component {
     this.getLocale = this.getLocale.bind(this);
     this.onInputSizeChanged = this.onInputSizeChanged.bind(this);
     this.onInputTextChanged = this.onInputTextChanged.bind(this);
-    this.onInputNumberChanged = this.onInputNumberChanged.bind(this);
     this.onMainViewLayout = this.onMainViewLayout.bind(this);
     this.onInitialLayoutViewLayout = this.onInitialLayoutViewLayout.bind(this);
-
+    this.onAutocompleteSelect = this.onAutocompleteSelect.bind(this);
+    this.onAutocompleteSubmit = this.onAutocompleteSubmit.bind(this);
+    this.removeRecipient = this.removeRecipient.bind(this);
 
     this.invertibleScrollViewProps = {
       inverted: true,
@@ -106,6 +112,7 @@ class GiftedChat extends React.Component {
     this.setIsMounted(true);
     this.initLocale();
     this.setMessages(messages || []);
+    this.setRecipients([]);
     this.setTextFromProp(text);
   }
 
@@ -151,6 +158,15 @@ class GiftedChat extends React.Component {
 
   setMessages(messages) {
     this._messages = messages;
+  }
+
+  setRecipients(recipients) {
+    this._recipients = recipients;
+    this.setState({recipients: recipients})
+  }
+
+  getRecipients() {
+    return this._recipients
   }
 
   getMessages() {
@@ -249,7 +265,6 @@ class GiftedChat extends React.Component {
   }
 
   onKeyboardWillShow(e) {
-    this.setIsTypingDisabled(true);
     this.setKeyboardHeight(e.endCoordinates ? e.endCoordinates.height : e.end.height);
     this.setBottomOffset(this.props.bottomOffset);
     const newMessagesContainerHeight = this.prepareMessagesContainerHeight( this.getMessagesContainerHeightWithKeyboard() );
@@ -266,7 +281,6 @@ class GiftedChat extends React.Component {
   }
 
   onKeyboardWillHide() {
-    this.setIsTypingDisabled(true);
     this.setKeyboardHeight(0);
     this.setBottomOffset(0);
     const newMessagesContainerHeight = this.prepareMessagesContainerHeight( this.getBasicMessagesContainerHeight() );
@@ -286,14 +300,12 @@ class GiftedChat extends React.Component {
     if (Platform.OS === 'android') {
       this.onKeyboardWillShow(e);
     }
-    this.setIsTypingDisabled(false);
   }
 
   onKeyboardDidHide(e) {
     if (Platform.OS === 'android') {
       this.onKeyboardWillHide(e);
     }
-    this.setIsTypingDisabled(false);
   }
 
   scrollToBottom(animated = true) {
@@ -343,8 +355,9 @@ class GiftedChat extends React.Component {
       this.resetInputToolbar();
     }
 
-    this.props.onSend(messages, this.state.number);
+    this.props.onSend(messages, this._recipients);
     this.scrollToBottom();
+    this.setRecipients([])
 
     if (shouldResetInputToolbar === true) {
       setTimeout(() => {
@@ -358,9 +371,6 @@ class GiftedChat extends React.Component {
   resetInputToolbar() {
     if (this.textInput) {
       this.textInput.clear();
-    }
-    if (this.numberInput) {
-      this.numberInput.clear();
     }
     this.notifyInputTextReset();
     const newComposerHeight = MIN_COMPOSER_HEIGHT;
@@ -391,20 +401,6 @@ class GiftedChat extends React.Component {
     // Only set state if it's not being overridden by a prop.
     if (this.props.text === undefined) {
       this.setState({ text });
-    }
-  }
-
-  onInputNumberChanged(number) {
-    if (this.getIsTypingDisabled()) {
-      return;
-    }
-    number = Number(number)
-    if (this.props.onInputNumberChanged) {
-      this.props.onInputNumberChanged(number);
-    }
-    // Only set state if it's not being overridden by a prop.
-    if (this.props.number === undefined) {
-      this.setState({ number });
     }
   }
 
@@ -472,34 +468,67 @@ class GiftedChat extends React.Component {
     );
   }
 
+  filterAutocompleteResults(query) {
+    if (!query) {
+      return []
+    }
+    const { autocompleteData } = this.props;
+    const regex = new RegExp(`${query.trim()}`, 'i')
+    return autocompleteData.filter(s => s.text.search(regex) >= 0)
+  }
+
+  onAutocompleteSelect(item) {
+    this._recipients.push(item)
+    this.setState({query: '', recipients: this._recipients})
+  }
+
+  onAutocompleteSubmit() {
+    this.onAutocompleteSelect({key: uuid.v4(), text: this.state.query, number: this.state.query})
+  }
+
+  removeRecipient(key) {
+    let index = this._recipients.findIndex(r => r.key === key)
+    if (index !== -1 ) {
+      this._recipients.splice(index, 1)
+      this.setState({recipients: this._recipients})
+    }
+  }
+
   renderNumberToolbar() {
     if (!this.props.isNewMessage) {
       return null
     }
-    const numberToolbarProps = {
-      ...this.props,
-      // text: '',
-      number: this.state.number,
-      composerHeight: MIN_COMPOSER_HEIGHT,
-      onSend: this.onSend,
-      onInputSizeChanged: this.onInputSizeChanged,
-      onTextChanged: this.onInputNumberChanged,
-      textInputProps: {
-        ...this.props.textInputProps,
-        ref: numberInput => this.numberInput = numberInput,
-        placeholder: 'Type mobile number..',
-        keyboardType: 'numeric',
-        autoCorrect: false,
-        autoFocus: true,
-        numberOfLines: 1,
-        value: this.props.number,
-      },
-      options: false,
-    }
+    const { query } = this.state;
+    const data = this.filterAutocompleteResults(query)
+    let recipientList = this._recipients.map(r => {
+      return (
+        <View key={r.key} style={styles.recipient}>
+          <Text key={r.key} style={styles.recipientName}>{r.text}</Text>
+          <TouchableOpacity onPress={() => this.removeRecipient(r.key)}>
+            <Icon name="times" size={20} />
+          </TouchableOpacity>
+        </View>
+      )
+    })
     return (
-      <InputToolbar
-        {...numberToolbarProps}
-      />
+      <View style={{flex: 1}}>
+        {recipientList.length > 0 && <View style={styles.recipientsContainer}>{recipientList}</View>}
+        <View style={{flex: 1}}>
+          <Autocomplete
+            data={data}
+            defaultValue={query}
+            onChangeText={text => this.setState({ query: text })}
+            containerStyle={styles.autocompleteContainer}
+            placeholder={this.props.autocompletePlaceholder}
+            onSubmitEditing={() => this.onAutocompleteSubmit()}
+            renderItem={ item => (
+              <TouchableOpacity onPress={() => this.onAutocompleteSelect(item)}>
+                <Text style={styles.autocompleteItemText}>{item.text}</Text>
+              </TouchableOpacity>
+            )}
+          />
+        </View>
+      </View>
     )
   }
 
@@ -543,6 +572,47 @@ class GiftedChat extends React.Component {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  autocompleteContainer: {
+    flex: 1,
+    left: 0,
+    position: 'absolute',
+    right: 0,
+    top: 0,
+    zIndex: 1,
+  },
+  autocompleteItemText: {
+    margin: 10,
+  },
+  recipientsContainer: {
+    zIndex: 1,
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 45,
+    paddingTop: 5,
+    paddingLeft: 10,
+    paddingRight: 10,
+    paddingBottom: 5,
+    flex: 1,
+    flexDirection: 'row',
+    justifyContent: 'flex-start',
+    alignItems: 'flex-start',
+    flexWrap: 'wrap',
+    backgroundColor: '#FFFFFF',
+  },
+  recipient: {
+    flexDirection: 'row',
+    borderRadius: 4,
+    backgroundColor: '#DDD',
+    padding: 1,
+    marginTop: 1,
+    marginRight: 5,
+    zIndex: 9,
+  },
+  recipientName: {
+    color: '#000000',
+    marginRight: 10,
   },
 });
 
@@ -602,14 +672,16 @@ GiftedChat.defaultProps = {
     android: 'always',
   }),
   onInputTextChanged: null,
-  onInputNumberChanged: null,
   maxInputLength: null,
+  autocompleteData: [],
+  autocompletePlaceholder: 'Type name or number..',
+  recipients: [],
 };
 
 GiftedChat.propTypes = {
   messages: PropTypes.array,
   text: PropTypes.string,
-  number: PropTypes.number,
+  query: PropTypes.string,
   placeholder: PropTypes.string,
   messageIdGenerator: PropTypes.func,
   user: PropTypes.object,
@@ -650,8 +722,10 @@ GiftedChat.propTypes = {
   listViewProps: PropTypes.object,
   keyboardShouldPersistTaps: PropTypes.oneOf(['always', 'never', 'handled']),
   onInputTextChanged: PropTypes.func,
-  onInputNumberChanged: PropTypes.func,
   maxInputLength: PropTypes.number,
+  autocompleteData: PropTypes.array,
+  autocompletePlaceholder: PropTypes.string,
+  recipients: PropTypes.array,
 };
 
 export {
