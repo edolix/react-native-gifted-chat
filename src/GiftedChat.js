@@ -484,7 +484,9 @@ class GiftedChat extends React.Component {
   }
 
   onAutocompleteSubmit() {
-    this.onAutocompleteSelect({key: uuid.v4(), text: this.state.query, number: this.state.query})
+    if (this.state.query) {
+      this.onAutocompleteSelect({key: uuid.v4(), text: this.state.query, number: this.state.query})
+    }
   }
 
   removeRecipient(key) {
@@ -522,6 +524,7 @@ class GiftedChat extends React.Component {
             containerStyle={styles.autocompleteContainer}
             placeholder={this.props.autocompletePlaceholder}
             onSubmitEditing={() => this.onAutocompleteSubmit()}
+            onBlur={() => this.onAutocompleteSubmit()}
             renderItem={ item => (
               <TouchableOpacity onPress={() => this.onAutocompleteSelect(item)}>
                 <Text style={styles.autocompleteItemText}>{item.text}</Text>
