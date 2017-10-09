@@ -5,25 +5,20 @@ import {
   StyleSheet,
   View,
   ViewPropTypes,
+  TouchableOpacity
 } from 'react-native';
-import Lightbox from 'react-native-lightbox';
 
 export default class MessageImage extends React.Component {
   render() {
     return (
       <View style={[styles.container, this.props.containerStyle]}>
-        <Lightbox
-          activeProps={{
-            style: styles.imageActive,
-          }}
-          {...this.props.lightboxProps}
-        >
+        <TouchableOpacity onPress={() => this.props.onImageTapped(this.props.currentMessage._id)}>
           <Image
             {...this.props.imageProps}
             style={[styles.image, this.props.imageStyle]}
             source={{uri: this.props.currentMessage.image}}
           />
-        </Lightbox>
+        </TouchableOpacity>
       </View>
     );
   }

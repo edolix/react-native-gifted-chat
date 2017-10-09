@@ -53,6 +53,7 @@ class GiftedChat extends React.Component {
     this._isFirstLayout = true;
     this._locale = 'en';
     this._messages = [];
+    this._mediaList = [];
     this._recipients = [];
 
     this.state = {
@@ -75,6 +76,7 @@ class GiftedChat extends React.Component {
     this.onAutocompleteSelect = this.onAutocompleteSelect.bind(this);
     this.onAutocompleteSubmit = this.onAutocompleteSubmit.bind(this);
     this.removeRecipient = this.removeRecipient.bind(this);
+    this.imageTapped = this.imageTapped.bind(this);
 
     this.invertibleScrollViewProps = {
       inverted: true,
@@ -158,6 +160,13 @@ class GiftedChat extends React.Component {
 
   setMessages(messages) {
     this._messages = messages;
+    this._mediaList = messages.filter(m => { return m.image }).map(m => { return {
+        messageId: m._id,
+        // thumb: '', // thumbnail version of the photo to be displayed in grid view. actual photo is used if thumb is not provided
+        photo: m.image,
+        // caption: '', // photo caption to be displayed
+      }
+    })
   }
 
   setRecipients(recipients) {
@@ -328,6 +337,8 @@ class GiftedChat extends React.Component {
           invertibleScrollViewProps={this.invertibleScrollViewProps}
 
           messages={this.getMessages()}
+
+          onImageTapped={this.imageTapped}
 
           ref={component => this._messageContainerRef = component}
         />
@@ -553,7 +564,25 @@ class GiftedChat extends React.Component {
     return null;
   }
 
+  imageTapped(messageId) {
+    console.log('IMAGE TAPPED', messageId)
+    this.setState({
+      imageView: true,
+      imageInitialIndex: this._mediaList.findIndex(i => { return i.messageId === messageId}),
+    })
+  }
+
   render() {
+    if (this.state.imageView === true) {
+      return (
+        <PhotoBrowser
+          onBack={this.props.navigator.pop}
+          mediaList={this._mediaList}
+          enableGrid={false}
+          useCircleProgress={true}
+        />
+      )
+    }
     if (this.state.isInitialized === true) {
       return (
         <ActionSheet ref={component => this._actionSheetRef = component}>

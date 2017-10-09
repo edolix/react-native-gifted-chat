@@ -37,7 +37,7 @@ export default class Bubble extends React.Component {
 
   renderMessageText() {
     if (this.props.currentMessage.text) {
-      const {containerStyle, wrapperStyle, ...messageTextProps} = this.props;
+      const {containerStyle, wrapperStyle, messages, ...messageTextProps} = this.props;
       if (this.props.renderMessageText) {
         return this.props.renderMessageText(messageTextProps);
       }
@@ -48,7 +48,7 @@ export default class Bubble extends React.Component {
 
   renderMessageImage() {
     if (this.props.currentMessage.image) {
-      const {containerStyle, wrapperStyle, ...messageImageProps} = this.props;
+      const {containerStyle, wrapperStyle, messages, ...messageImageProps} = this.props;
       if (this.props.renderMessageImage) {
         return this.props.renderMessageImage(messageImageProps);
       }
