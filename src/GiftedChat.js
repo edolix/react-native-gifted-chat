@@ -9,6 +9,9 @@ import {
   Text,
 } from 'react-native';
 
+import PhotoBrowser from 'react-native-photo-browser';
+import { Navigation } from 'react-native-navigation';
+
 import Autocomplete from 'react-native-autocomplete-input';
 import Icon from 'react-native-vector-icons/FontAwesome'
 import ActionSheet from '@expo/react-native-action-sheet';
@@ -166,7 +169,7 @@ class GiftedChat extends React.Component {
         photo: m.image,
         // caption: '', // photo caption to be displayed
       }
-    })
+    }).reverse()
   }
 
   setRecipients(recipients) {
@@ -565,7 +568,6 @@ class GiftedChat extends React.Component {
   }
 
   imageTapped(messageId) {
-    console.log('IMAGE TAPPED', messageId)
     this.setState({
       imageView: true,
       imageInitialIndex: this._mediaList.findIndex(i => { return i.messageId === messageId}),
@@ -576,7 +578,8 @@ class GiftedChat extends React.Component {
     if (this.state.imageView === true) {
       return (
         <PhotoBrowser
-          onBack={this.props.navigator.pop}
+          onBack={() => this.setState({imageView: false})}
+          initialIndex={this.state.imageInitialIndex}
           mediaList={this._mediaList}
           enableGrid={false}
           useCircleProgress={true}
