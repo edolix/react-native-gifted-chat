@@ -58,6 +58,7 @@ class GiftedChat extends React.Component {
     this._messages = [];
     this._mediaList = [];
     this._recipients = [];
+    this._shareMenu = function() {};
 
     this.state = {
       isInitialized: false, // initialization will calculate maxHeight before rendering the chat
@@ -113,12 +114,14 @@ class GiftedChat extends React.Component {
   }
 
   componentWillMount() {
-    const { messages, text } = this.props;
+    const { messages, text, shareMenu } = this.props;
+
     this.setIsMounted(true);
     this.initLocale();
     this.setMessages(messages || []);
     this.setRecipients([]);
     this.setTextFromProp(text);
+    this._shareMenu = shareMenu || function() {}
   }
 
   componentWillUnmount() {
@@ -583,6 +586,8 @@ class GiftedChat extends React.Component {
           mediaList={this._mediaList}
           enableGrid={false}
           useCircleProgress={true}
+          displayActionButton={true}
+          onActionButton={this._shareMenu}
         />
       )
     }
