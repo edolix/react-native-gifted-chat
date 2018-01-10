@@ -271,7 +271,8 @@ class GiftedChat extends React.Component {
 
   prepareMessagesContainerHeight(value) {
     if (this.props.isNewMessage) {
-      value -= this.getMinInputToolbarHeight()
+      // value -= this.getMinInputToolbarHeight()
+      value -= 100
     }
     if (this.props.isAnimated === true) {
       return new Animated.Value(value);
@@ -531,24 +532,22 @@ class GiftedChat extends React.Component {
       )
     })
     return (
-      <View style={{flex: 1}}>
+      <View style={{height: 100}}>
         {recipientList.length > 0 && <View style={styles.recipientsContainer}>{recipientList}</View>}
-        <View style={{flex: 1}}>
-          <Autocomplete
-            data={data}
-            defaultValue={query}
-            onChangeText={text => this.setState({ query: text })}
-            containerStyle={styles.autocompleteContainer}
-            placeholder={this.props.autocompletePlaceholder}
-            onSubmitEditing={() => this.onAutocompleteSubmit()}
-            onBlur={() => this.onAutocompleteSubmit()}
-            renderItem={ item => (
-              <TouchableOpacity onPress={() => this.onAutocompleteSelect(item)}>
-                <Text style={styles.autocompleteItemText}>{item.text}</Text>
-              </TouchableOpacity>
-            )}
-          />
-        </View>
+        <Autocomplete
+          data={data}
+          defaultValue={query}
+          onChangeText={text => this.setState({ query: text })}
+          containerStyle={styles.autocompleteContainer}
+          placeholder={this.props.autocompletePlaceholder}
+          onSubmitEditing={() => this.onAutocompleteSubmit()}
+          onBlur={() => this.onAutocompleteSubmit()}
+          renderItem={ item => (
+            <TouchableOpacity onPress={() => this.onAutocompleteSelect(item)}>
+              <Text style={styles.autocompleteItemText}>{item.text}</Text>
+            </TouchableOpacity>
+          )}
+        />
       </View>
     )
   }
@@ -620,7 +619,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     right: 0,
     top: 0,
-    zIndex: 1,
+    zIndex: 2,
   },
   autocompleteItemText: {
     margin: 10,
@@ -649,7 +648,7 @@ const styles = StyleSheet.create({
     padding: 1,
     marginTop: 1,
     marginRight: 5,
-    zIndex: 9,
+    // zIndex: 1,
   },
   recipientName: {
     color: '#000000',
